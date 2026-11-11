@@ -3,16 +3,20 @@
 Use Ubuntu 22.04 and Python 3.10+ with the system packages listed in README.md.
 Run `./run.sh --check` before starting the graphical application.
 
-Before proposing a change, check the affected user behavior in a disposable
-configuration directory:
+Before proposing a change, run the GUI regression checks in an X11 session:
 
 ```bash
-XDG_CONFIG_HOME="$(mktemp -d)" ./run.sh
+python3 tests/gui_regression.py
 ```
+
+The checks copy the program into a temporary directory and use synthetic data.
+Changing only XDG_CONFIG_HOME does not isolate notes: the live draft belongs to
+the program directory. For a manual isolated run, use a disposable source copy.
 
 For window or note changes, verify both standalone and combined modes, gutter
 click versus drag, the final empty-line number, click-through before/after editing,
-and save/reload. Use synthetic note text in screenshots and bug reports.
+and snapshot save/cancel, independent autosave, and language changes. Use synthetic
+note text in screenshots and bug reports.
 
 Report the Ubuntu version, X11/Wayland session, display scaling, Dock position,
 steps to reproduce and expected/actual behavior. Do not attach real note contents,

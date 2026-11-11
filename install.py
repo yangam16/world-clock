@@ -35,7 +35,7 @@ def main():
     destination.mkdir(parents=True, exist_ok=True)
     binary_dir.mkdir(parents=True, exist_ok=True)
     desktop_dir.mkdir(parents=True, exist_ok=True)
-    for name in ('world_clock.py', 'notes.py', 'run.sh', 'README.md', 'THIRD_PARTY.md', 'LICENSE', 'LICENSE.proposed'):
+    for name in ('world_clock.py', 'notes.py', 'i18n.py', 'run.sh', 'README.md', 'THIRD_PARTY.md', 'LICENSE'):
         path = source / name
         if path.is_file() and path.resolve() != (destination / name).resolve():
             shutil.copy2(path, destination / name)

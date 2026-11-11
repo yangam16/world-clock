@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.2
+
+- English and Simplified Chinese UI with persistent, live language switching.
+- Ctrl+S opens a nonblocking snapshot save dialog. Choosing a destination exports
+  the current text without changing the live autosave target.
+- Live drafts autosave to the program directory; legacy config-directory notes
+  are migrated when no program-directory draft exists, leaving the old file intact.
+- Nonblocking, deduplicated save-error dialogs prevent focus-loss recursion.
+- Locked note bodies absorb mouse clicks so double-clicks cannot open files or
+  applications behind the note. Clock windows retain click-through behavior.
+- X11 regression checks exercise actual shortcuts, double clicks, snapshot
+  isolation, migration, autosave, window modes and language changes.
+
 ## 0.1.1
 
 - Optional desktop shortcut with desktop-directory detection and launch trust setup.

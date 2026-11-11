@@ -8,14 +8,14 @@ import tarfile
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
-    'world_clock.py', 'notes.py', 'run.sh', 'install.py', 'world-clock.desktop',
+    'world_clock.py', 'notes.py', 'i18n.py', 'run.sh', 'install.py', 'world-clock.desktop',
     'README.md', 'THIRD_PARTY.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
-    '.gitignore', '.gitattributes', 'scripts/build_source.py', 'LICENSE',
+    '.gitignore', '.gitattributes', 'scripts/build_source.py', 'tests/gui_regression.py', 'LICENSE',
 )
 
 
 def main():
-    release = 'world-clock-0.1.1'
+    release = 'world-clock-0.1.2'
     output = ROOT / 'dist' / f'{release}.tar.gz'
     contents = []
     for name in FILES:
