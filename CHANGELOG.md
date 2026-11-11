@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added English README with links between both language versions.
+- Added step-by-step desktop launcher installation, trust, use and update instructions.
+- Documented LLM-assisted development and invited GitHub Issues in both READMEs.
+- Include both READMEs in per-user installations and future source archives.
+
 ## 0.1.2
 
 - English and Simplified Chinese UI with persistent, live language switching.

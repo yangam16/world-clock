@@ -9,7 +9,7 @@ import tarfile
 ROOT = Path(__file__).resolve().parents[1]
 FILES = (
     'world_clock.py', 'notes.py', 'i18n.py', 'run.sh', 'install.py', 'world-clock.desktop',
-    'README.md', 'THIRD_PARTY.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
+    'README.md', 'README.en.md', 'THIRD_PARTY.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
     '.gitignore', '.gitattributes', 'scripts/build_source.py', 'tests/gui_regression.py', 'LICENSE',
 )
 
