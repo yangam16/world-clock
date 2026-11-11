@@ -50,4 +50,3 @@ The app uses the computer's system clock and provides no cloud sync or network t
 - Wayland, other desktops, multiple displays, and mixed scaling have not completed hardware acceptance. Wayland may restrict positioning, opacity, or click-through behavior.
 - Only one instance can share a configuration or program directory. The program directory must be writable; per-user installation is recommended.
 - No automatic startup, rich text, multiple notes, or version history. Sudden power loss or a forced kill can lose unsaved edits.
-

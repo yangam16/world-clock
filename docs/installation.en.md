@@ -75,4 +75,3 @@ Double-click the desktop shortcut again. Installation updates the app and launch
 ### Optional: run from source
 
 Use `./run.sh` in the clone to run directly from source. Its draft is the clone's `note.txt`; the desktop-installed app uses the installed program directory instead. Quit the old instance and back up the draft before switching between these copies; copy the draft to the target program directory if needed.
-
