@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=World Clock
+Name[zh_CN]=世界时钟
+Comment=Desktop world clocks and a sticky note
+Comment[zh_CN]=多时区桌面时钟与便签
+Exec=world-clock
+Icon=preferences-system-time
+Terminal=false
+Categories=Utility;Clock;
+StartupNotify=false
