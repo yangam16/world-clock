@@ -1,0 +1,38 @@
+name: Bug report / 问题反馈
+description: Report reproducible clock, note or installation problems.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: Please use synthetic notes and redact private data. 请勿上传真实便签、凭据或未脱敏桌面截图。
+  - type: input
+    id: version
+    attributes:
+      label: Version / 版本
+      description: Release tag or output of ./run.sh --version.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Desktop environment / 桌面环境
+      placeholder: Ubuntu 22.04, X11, one display at 100% scale, bottom Dock
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / 复现步骤
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior / 期望与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted diagnostics / 脱敏诊断
+      description: Optional; remove note text, user paths and credentials.

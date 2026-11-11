@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report / 安全问题
+    url: https://github.com/yangam16/world-clock/blob/main/SECURITY.md
+    about: Follow the private reporting instructions; do not disclose sensitive details publicly.

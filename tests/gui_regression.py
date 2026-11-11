@@ -16,13 +16,13 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMP = tempfile.TemporaryDirectory(prefix='world-clock-regression-')
 APP_ROOT = Path(TEMP.name) / 'app'
 APP_ROOT.mkdir()
-for filename in ('world_clock.py', 'notes.py', 'i18n.py'):
-    shutil.copy2(ROOT / filename, APP_ROOT / filename)
+shutil.copytree(ROOT / 'src', APP_ROOT / 'src', ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+shutil.copy2(ROOT / 'run.sh', APP_ROOT / 'run.sh')
 for fallback in ROOT.glob('vendor/usr/lib/*/girepository-1.0/AyatanaAppIndicator3-0.1.typelib'):
     target = APP_ROOT / fallback.relative_to(ROOT)
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(fallback, target)
-sys.path.insert(0, str(APP_ROOT))
+sys.path.insert(0, str(APP_ROOT / 'src'))
 os.environ['XDG_CONFIG_HOME'] = TEMP.name
 os.environ['LANG'] = 'en_US.UTF-8'
 legacy = Path(TEMP.name) / 'world-clock/note.txt'
@@ -237,8 +237,8 @@ def checked_main():
 
 
 Gtk.main = checked_main
-sys.argv = [str(APP_ROOT / 'world_clock.py')]
-runpy.run_path(str(APP_ROOT / 'world_clock.py'), run_name='__main__')
+sys.argv = ['world-clock']
+runpy.run_module('world_clock', run_name='__main__', alter_sys=True)
 TEMP.cleanup()
 if failures:
     raise SystemExit('; '.join(failures))

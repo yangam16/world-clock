@@ -1,6 +1,7 @@
 __pycache__/
 *.py[cod]
 .venv/
+*.egg-info/
 .env
 .env.*
 *.pem
@@ -9,6 +10,7 @@ vendor/
 dist/
 build/
 *.deb
+*.whl
 *.tar.gz
 *.zip
 note.txt

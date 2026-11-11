@@ -1,0 +1,12 @@
+include LICENSE README.md README.en.md CONTRIBUTING.md SECURITY.md CHANGELOG.md THIRD_PARTY.md
+include pyproject.toml MANIFEST.in run.sh install.py .gitignore .gitattributes .editorconfig
+recursive-include src/world_clock *.py
+recursive-include assets *.desktop
+recursive-include docs *.md
+recursive-include scripts *.py
+recursive-include tests *.py
+recursive-include .github *.yml *.md
+global-exclude *.py[cod] *.tmp note.txt note-*.txt settings.json .instance.lock .env .env.* *.key *.pem *.deb
+prune vendor
+prune dist
+prune build

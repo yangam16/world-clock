@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "world-clock-desktop"
+dynamic = ["version"]
+description = "Ubuntu desktop world clocks and a plain-text sticky note"
+readme = "README.en.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [{name = "World Clock contributors"}]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Desktop Environment :: Gnome",
+]
+
+[project.urls]
+Repository = "https://github.com/yangam16/world-clock"
+Issues = "https://github.com/yangam16/world-clock/issues"
+Changelog = "https://github.com/yangam16/world-clock/blob/main/CHANGELOG.md"
+
+[project.scripts]
+world-clock = "world_clock.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.dynamic]
+version = {attr = "world_clock.__version__"}

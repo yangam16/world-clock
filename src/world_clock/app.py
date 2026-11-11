@@ -9,7 +9,18 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, available_timezones
-from i18n import Translator
+from . import __version__
+from .i18n import Translator
+
+
+def program_directory():
+    """Keep source/desktop drafts at the application root after packaging."""
+    root = Path(__file__).resolve().parents[2]
+    if Path(__file__).resolve().parents[1].name == 'src' and (root / 'run.sh').is_file():
+        return root
+    # A Python package installation has no checkout root or desktop launcher.
+    # Share the same per-user application-data directory as the desktop installer.
+    return Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share'))) / 'world-clock'
 
 def system_zone():
     """Resolve Ubuntu's IANA zone rather than a fixed current UTC offset."""
@@ -75,19 +86,19 @@ def main():
     parser = argparse.ArgumentParser(description='Ubuntu desktop world clock and sticky note')
     parser.add_argument('--local-only', action='store_true', help='Reset cities to the system time zone, preserving other preferences')
     parser.add_argument('--check', action='store_true', help='Check Python/GTK dependencies without opening a window')
-    parser.add_argument('--version', action='version', version='World Clock 0.1.2')
+    parser.add_argument('--version', action='version', version=f'World Clock {__version__}')
     args = parser.parse_args()
     try:
         import gi
         gi.require_version('GIRepository', '2.0')
         from gi.repository import GIRepository
-        for directory in (Path(__file__).parent / 'vendor/usr/lib').glob('*/girepository-1.0'):
+        for directory in (program_directory() / 'vendor/usr/lib').glob('*/girepository-1.0'):
             GIRepository.Repository.prepend_search_path(str(directory))
         gi.require_version('Gtk', '3.0')
         gi.require_version('AyatanaAppIndicator3', '0.1')
         from gi.repository import Gtk, Gdk, GLib, Gio, AyatanaAppIndicator3
         import cairo
-        from notes import NoteEditor
+        from .notes import NoteEditor
     except (ImportError, ValueError) as error:
         parser.exit(1, f'Desktop dependency unavailable: {error}\nInstall Ubuntu packages listed in README.md, then run ./run.sh --check.\n')
     if args.check:
@@ -98,7 +109,7 @@ def main():
     # launches share this lock and cannot race to write the same note/config.
     instance_locks = []
     try:
-        directories = {CONFIG.parent.resolve(), Path(__file__).resolve().parent}
+        directories = {CONFIG.parent.resolve(), program_directory().resolve()}
         for directory in sorted(directories):
             directory.mkdir(parents=True, exist_ok=True)
             handle = (directory / '.instance.lock').open('a')
@@ -173,7 +184,7 @@ def main():
             self.note_scroll = Gtk.ScrolledWindow()
             self.note_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
             self.note_scroll.set_size_request(240, 180)
-            self.note_editor = NoteEditor(self, Path(__file__).resolve().parent / 'note.txt',
+            self.note_editor = NoteEditor(self, program_directory() / 'note.txt',
                                           legacy_path=CONFIG.parent / 'note.txt')
             self.note_scroll.add(self.note_editor)
             self.note_window = Gtk.Window(title=self.tr('世界时钟 · 便签'))

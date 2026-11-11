@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-and-install:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Compile Python sources
+        run: /usr/bin/python3 -m compileall -q src scripts tests install.py
+      - name: Unit and installation checks
+        run: PYTHONPATH=src /usr/bin/python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Build source archive
+        run: /usr/bin/python3 scripts/build_source.py
+      - name: Check whitespace
+        run: git diff --check

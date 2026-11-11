@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.1.3
 
-- Added English README with links between both language versions.
-- Added step-by-step desktop launcher installation, trust, use and update instructions.
-- Documented LLM-assisted development and invited GitHub Issues in both READMEs.
-- Include both READMEs in per-user installations and future source archives.
+- Added English README, desktop launcher tutorials and LLM-development attribution.
+- Organized the app as a `src/world_clock` package, with desktop resources in
+  `assets/`, guides in `docs/`, and install/build tooling in `scripts/`.
+- Kept `./run.sh` and `python3 install.py --desktop` as stable entry points.
+- Preserved the live-draft directory and prevented legacy flat modules from
+  shadowing the new package during installation upgrades.
+- Added Python project metadata, contribution/security guidance, Issue/PR
+  templates and read-only CI for source, installation and archive checks.
+- Reworked both READMEs as concise project landing pages linked to full guides.
 
 ## 0.1.2
 

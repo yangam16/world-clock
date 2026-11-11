@@ -2,160 +2,76 @@
 
 [简体中文](README.md) | [English](README.en.md)
 
-面向 Ubuntu 22.04 桌面的轻量 GTK 3 工具：可选择多个时区，以紧凑横版窗口显示当地日期和时间，并提供可编辑便签。通过 Ubuntu 右上角系统顶栏图标控制，支持中文和英文即时切换。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/yangam16/world-clock/actions/workflows/ci.yml/badge.svg)](https://github.com/yangam16/world-clock/actions/workflows/ci.yml)
+
+面向 Ubuntu 22.04 的轻量 GTK 3 桌面工具。用紧凑横版窗口查看多个时区的日期与时间，通过系统顶栏管理时钟和便签。
 
 本项目基于LLM开发完成，欢迎提出[Issue](https://github.com/yangam16/world-clock/issues)。
 
-源码采用 [MIT 许可证](LICENSE)，第三方依赖保留各自的许可。
-
 ## 功能
 
-- 首次启动只显示一个时钟，使用系统 IANA 时区；可搜索并添加城市，常用城市支持中文搜索。
-- 显示 `MM/DD` 日期、24 小时制时间、PST/PDT 等缩写及 UTC 偏移，自动处理夏令时和跨日。
-- 默认每个城市独立一个无标题栏横版窗口，也可切换为统一列表。
-- 可选屏幕进行底部横排，依据系统工作区避开 Dock，城市较多时换行。
-- 支持鼠标穿透、窗口置顶、30%–100% 不透明度和位置保存。
-- 便签支持行号、单击编辑、拖动、保存和随窗口模式切换。
+- **多时区时钟**：默认跟随系统时区，可搜索添加城市，自动处理夏令时和跨日日期。
+- **桌面布局**：独立窗口或统一列表，底部横排避开 Dock，支持置顶、透明度和位置保存。
+- **便签**：行号、点击编辑、拖动、自动保存原稿；Ctrl+S 导出独立快照。
+- **中英文界面**：顶栏菜单即时切换并记住选择。
+- **桌面快捷方式**：安装后可双击图标或从应用菜单启动，无需每次打开终端。
 
-## 环境与安装
+## 快速开始
 
-已在一台 Ubuntu 22.04 **X11** 桌面验证。需要 Python 3.10+、GTK 3 和启用的 Ubuntu AppIndicators 扩展。
-
-先安装系统依赖：
+运行环境：**Ubuntu 22.04、Python 3.10+、GTK 3**。已验证 X11 桌面；需要启用 Ubuntu AppIndicators。
 
 ```bash
 sudo apt update
-sudo apt install python3 python3-gi python3-gi-cairo python3-cairo gir1.2-gtk-3.0 gir1.2-pango-1.0 gir1.2-ayatanaappindicator3-0.1 tzdata gnome-shell-extension-appindicator
-```
+sudo apt install git python3 python3-gi python3-gi-cairo python3-cairo gir1.2-gtk-3.0 gir1.2-pango-1.0 gir1.2-ayatanaappindicator3-0.1 tzdata gnome-shell-extension-appindicator
 
-在“扩展”中确认 **Ubuntu AppIndicators** 已启用。如图标服务不存在，程序会提示并退出，避免穿透窗口失去控制入口。
-
-克隆项目，检查依赖，并安装桌面图标：
-
-```bash
 git clone https://github.com/yangam16/world-clock.git
 cd world-clock
 ./run.sh --check
 python3 install.py --desktop
 ```
 
-`--check` 仅验证依赖能否导入，不证明桌面显示、系统图标和鼠标交互正常。
+回到桌面，右键 **World Clock / 世界时钟** 图标选择 **允许启动**，然后双击。也可在应用菜单搜索“世界时钟”。控制菜单位于 Ubuntu **右上角系统顶栏**。
 
-安装器无需 sudo。完成后按照下一节启动即可。如果只需要应用菜单入口，不需要桌面图标，可改用：
+仓库中的 `assets/world-clock.desktop` 是模板，应由安装器生成本机快捷方式。完整步骤和常见问题见[桌面图标教程](docs/installation.zh-CN.md)。
 
-```bash
-python3 install.py
+## 文档
+
+| 主题 | 中文 | English |
+|---|---|---|
+| 安装、桌面图标、升级 | [安装教程](docs/installation.zh-CN.md) | [Installation](docs/installation.en.md) |
+| 时钟、便签、快照和数据位置 | [使用指南](docs/usage.zh-CN.md) | [User guide](docs/usage.en.md) |
+| 开发、测试和源码打包 | [开发指南](docs/development.md) | [Development](docs/development.md) |
+
+- [贡献指南](CONTRIBUTING.md) · [更新记录](CHANGELOG.md)
+- [安全报告](SECURITY.md) · [第三方依赖](THIRD_PARTY.md)
+- [版本下载](https://github.com/yangam16/world-clock/releases) · [反馈问题](https://github.com/yangam16/world-clock/issues/new/choose)
+
+## 项目结构
+
+```text
+world-clock/
+├── src/world_clock/       # 应用包：窗口、便签、中英文界面
+├── assets/                # 桌面启动器模板
+├── docs/                  # 安装、使用和开发文档
+├── scripts/               # 用户安装器与源码打包工具
+├── tests/                 # 自动检查与 X11 GUI 回归
+├── .github/               # CI、Issue 表单、PR 模板
+├── pyproject.toml         # Python 项目元数据
+├── run.sh                 # 保留的源码启动入口
+├── install.py             # 保留的桌面安装入口
+├── README.md / README.en.md
+└── LICENSE
 ```
 
-安装器将程序复制到 `$XDG_DATA_HOME/world-clock`（默认 `~/.local/share/world-clock`），生成应用菜单入口和 `~/.local/bin/world-clock` 命令。系统依赖仍需先安装，用户配置和便签不会被改写。再次运行安装器可更新程序；更新前先从顶栏菜单退出旧实例。
+## 数据与兼容性
 
-## 克隆后如何使用 .desktop 文件
+原稿始终自动保存到**程序目录的 `note.txt`**，桌面安装后默认是 `~/.local/share/world-clock/note.txt`。Ctrl+S 导出的快照不会随之后的编辑更新。配置位于 `~/.config/world-clock/`，遵循 XDG 设置。安装升级保留已有原稿和配置。
 
-### 1. 生成指向安装目录的桌面图标
+目前已在 Ubuntu 22.04 X11、单屏和底部 Dock 下验证。Wayland、其他桌面及多屏缩放组合尚未验收；没有 AppImage、开机自启、富文本或多便签功能。更多验证边界见[使用指南](docs/usage.zh-CN.md)。
 
-在克隆得到的 `world-clock` 目录中执行一次：
+## 参与项目
 
-```bash
-python3 install.py --desktop
-```
+欢迎通过 [Issue](https://github.com/yangam16/world-clock/issues/new/choose) 报告 Bug 或提出功能建议，也欢迎提交 Pull Request。请使用合成文字复现问题，上传前去除便签、账号、凭据和桌面截图中的隐私信息。
 
-安装器会自动检测桌面目录（包括中文的“桌面”目录），复制程序，并生成使用绝对路径的启动入口：
-
-| 文件 | 用途 |
-|---|---|
-| 克隆目录中的 `world-clock.desktop` | 启动器模板，`Exec=world-clock`；安装器会替换为实际安装路径 |
-| `~/.local/share/applications/world-clock.desktop` | 供 GNOME 应用菜单使用的入口 |
-| `$(xdg-user-dir DESKTOP)/world-clock.desktop` | 桌面上的可双击快捷方式 |
-
-表中的安装位置使用默认 XDG 路径。不要直接双击克隆目录中的模板，或只把模板复制到桌面；模板尚未绑定本机安装位置，系统也不一定能在 PATH 中找到 `world-clock`。运行安装器即可生成正确的文件，无需手工修改 `Exec`。
-
-### 2. 允许启动并双击
-
-1. 回到 Ubuntu 桌面，找到 **World Clock / 世界时钟** 图标。
-2. 如果它显示为普通文本文件，或提示未受信任，右键该图标，选择 **允许启动 / Allow Launching**。
-3. 双击图标启动。日常使用不需要再打开终端。
-4. 也可按 **Super** 键，在应用菜单搜索 **World Clock / 世界时钟**；可将应用加入收藏，方便从 Dock 启动。
-
-安装器已设置可执行权限并尝试标记“受信任”。如果右键没有“允许启动”，在文件管理器中打开该文件的 **属性 → 权限**，勾选 **允许将文件作为程序执行**，再回到桌面操作。如果整个桌面都不显示文件图标，在“扩展”中检查 **Desktop Icons NG (DING)** 是否启用。
-
-### 3. 找到控制菜单
-
-程序启动后，在 Ubuntu **右上角系统顶栏**找到时钟图标。添加时区、显示便签、语言切换和退出都在这个菜单中。时钟默认无标题栏并开启穿透，不需要在时钟正文上寻找菜单。重复双击桌面快捷方式不会创建第二个实例。
-
-### 更新或重新生成图标
-
-先在顶栏菜单中退出正在运行的实例，再回到克隆目录执行：
-
-```bash
-git pull --ff-only
-python3 install.py --desktop
-```
-
-随后重新双击桌面图标。安装器会更新程序和两个启动入口，保留安装目录中的便签原稿及个人配置。安装后的图标指向安装副本，不依赖克隆目录的位置。
-
-### 可选：只从源码运行
-
-在克隆目录执行 `./run.sh` 可直接运行源码；这种方式下原稿位于克隆目录的 `note.txt`，而桌面安装副本的原稿位于安装目录。切换运行方式前请退出旧实例并备份原稿，需要时将原稿复制到目标程序目录。
-
-## 时钟操作
-
-- 顶栏图标 → **添加时区…**：搜索、双击添加。
-- **每个城市独立窗口**：切换独立窗口或统一列表。
-- **底部横排（避开 Dock）**：选择屏幕重新排列。屏幕配置变化后可再次使用。
-- 默认开启鼠标穿透；取消后可在时钟空白处拖动窗口或点击 × 移除城市。
-- **透明度…**、**窗口置顶**：调整显示方式。
-- **退出世界时钟**：保存便签并关闭程序。
-- **Language / 语言** → **English / 简体中文**：即时切换菜单、窗口、提示和城市显示，自动记住选择。首次启动跟随系统语言，非中文环境默认英文。系统文件选择器内部的系统控件可能仍跟随桌面语言。
-
-恢复为单个系统时区时钟，同时保留其他偏好：
-
-```bash
-./run.sh --local-only
-```
-
-系统时区启动时从 `TZ`、`/etc/localtime` 或 `/etc/timezone` 解析；无法解析时回退 UTC。已保存的城市选择继续保留，运行中修改系统时区不会自动替换已有城市。
-
-## 便签
-
-顶栏菜单勾选 **显示便签**，默认关闭。开启独立窗口时便签单独显示，关闭时放在时钟列表下方；隐藏或切换模式保留内容。
-
-- **开启穿透**：时钟继续穿透；便签正文锁定并拦截鼠标点击，避免单击/双击打开背后的桌面文件或 WPS。只有单击行号并松开才进入编辑；按 Esc 或切换到其他窗口后保存并恢复正文锁定。
-- **关闭穿透**：正文始终可以直接点击编辑。
-- 左侧默认显示第 1 行号；有内容后显示可点击的下一空白行号。点击下一行号时才插入换行，自动折行不增加逻辑行号。
-- **左键拖动行号栏**移动窗口，拖动不会修改文字；合并模式下移动整个窗口。也支持 Ctrl+左键直接拖动。
-- 独立便签可用**右键拖动行号栏**调整大小。位置和尺寸自动保存。
-- 停止输入约 0.8 秒后自动保存原稿。**Ctrl+S** 或顶栏菜单 **保存便签快照…** 打开保存窗口，选择文件位置和名称，导出当前内容的快照。后续编辑只更新原稿，不会修改已经导出的快照。
-- 原稿始终位于程序目录的 `note.txt`。快照不能选同一个原稿文件；默认快照名称带时间戳。取消保存窗口不会丢失内容或改变自动保存目标。隐藏和正常退出前仍保存原稿；保存失败会提示并保留内存内容。
-
-## 本地数据
-
-配置在 `$XDG_CONFIG_HOME/world-clock/`（默认 `~/.config/world-clock/`），便签原稿在程序目录：
-
-| 文件 | 用途 |
-|---|---|
-| `~/.config/world-clock/settings.json` | 城市、语言、窗口模式、透明度、位置、便签开关与尺寸；遵循 XDG_CONFIG_HOME |
-| `程序目录/note.txt` | UTF-8 原稿；用户安装时默认是 `~/.local/share/world-clock/note.txt`，从源码运行时位于源码目录 |
-| 用户指定的快照文件 | 导出当时的内容，后续编辑不会关联更新 |
-
-首次升级时，若程序目录没有原稿，会从旧配置目录的 `note.txt` 迁移内容，旧文件保留。升级安装不会覆盖程序目录已有的原稿。保存使用临时文件替换；无法读取原便签时禁止覆盖。程序不提供云同步或联网校时，使用电脑系统时钟；便签不加密，备份时请自行保护文本文件。
-
-源码发布包不包含上述个人数据、缓存或本机下载的依赖包。第三方依赖说明见 [THIRD_PARTY.md](THIRD_PARTY.md)。
-
-## 验证边界与限制
-
-- 已在 Ubuntu 22.04 X11、单屏、底部 Dock 下验证时区换算、夏令时、跨日、窗口排列、穿透区域、便签保存重载、行号栏的实际鼠标拖动/单击、Ctrl+S 保存窗口、快照独立性、中英文切换和锁定正文的双击拦截。
-- Wayland、其他桌面、多屏/不同缩放组合尚未完成实机验收。Wayland 可能限制窗口坐标、透明度或穿透行为。
-- 同一配置目录或程序目录只允许一个实例运行，避免重复双击导致便签写入冲突。程序目录需可写；推荐用户级安装。尚无开机自启、富文本、多便签或历史版本。
-- 突然断电或强制结束进程可能丢失尚未保存的编辑。
-
-## 开发与源码打包
-
-```bash
-python3 -m py_compile world_clock.py notes.py i18n.py install.py scripts/build_source.py
-python3 tests/gui_regression.py
-python3 scripts/build_source.py
-```
-
-GUI 回归测试需要 X11 和 `libXtst.so.6`；使用临时程序副本和合成便签，不读写真实便签，模拟鼠标/键盘，结束后恢复鼠标位置。
-
-打包器只收录明确列出的公开文件，生成 `dist/world-clock-0.1.2.tar.gz` 及 SHA-256 校验文件。详细贡献要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+安全漏洞请按 [SECURITY.md](SECURITY.md) 私下报告。源码采用 [MIT 许可证](LICENSE)；运行时依赖保留各自许可证。
