@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- Optional desktop shortcut with desktop-directory detection and launch trust setup.
+- App-menu launcher remains available after installation; no terminal is needed for daily use.
+- Single-instance protection for each configuration directory.
+- Preserve the optional local typelib and its notice during a developer-checkout installation.
+
 ## 0.1.0
 
 - Multiple selectable IANA time zones with local date, time and DST abbreviation.

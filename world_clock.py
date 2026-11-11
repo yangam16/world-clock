@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Small GTK world clock for Ubuntu 22.04 (Python 3.10+)."""
 import argparse
+import fcntl
 import json
 import os
 import signal
@@ -73,7 +74,7 @@ def main():
     parser = argparse.ArgumentParser(description='Ubuntu desktop world clock and sticky note')
     parser.add_argument('--local-only', action='store_true', help='Reset cities to the system time zone, preserving other preferences')
     parser.add_argument('--check', action='store_true', help='Check Python/GTK dependencies without opening a window')
-    parser.add_argument('--version', action='version', version='World Clock 0.1.0')
+    parser.add_argument('--version', action='version', version='World Clock 0.1.1')
     args = parser.parse_args()
     try:
         import gi
@@ -92,6 +93,17 @@ def main():
         print('Python, GTK 3, Cairo and Ayatana AppIndicator imports: OK')
         print('Desktop rendering, tray service and pointer interaction require a graphical session.')
         return
+    # Keep the descriptor alive for the entire GUI session. Repeated desktop
+    # launches share this lock and cannot race to write the same note/config.
+    try:
+        CONFIG.parent.mkdir(parents=True, exist_ok=True)
+        instance_lock = (CONFIG.parent / '.instance.lock').open('a')
+        fcntl.flock(instance_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print('World Clock is already running. Use its top-bar icon.')
+        return
+    except OSError as error:
+        parser.exit(1, f'Cannot acquire the application lock: {error}\n')
 
     class WorldClock(Gtk.Window):
         def __init__(self):

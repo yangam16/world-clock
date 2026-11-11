@@ -15,7 +15,7 @@ FILES = (
 
 
 def main():
-    release = 'world-clock-0.1.0'
+    release = 'world-clock-0.1.1'
     output = ROOT / 'dist' / f'{release}.tar.gz'
     contents = []
     for name in FILES:

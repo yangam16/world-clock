@@ -15,5 +15,6 @@ note.txt
 note.tmp
 settings.json
 settings.tmp
+.instance.lock
 .idea/
 .vscode/

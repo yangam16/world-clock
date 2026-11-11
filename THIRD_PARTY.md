@@ -17,4 +17,8 @@ uses system packages and does not redistribute the local Ubuntu `.deb` or its
 architecture-specific typelib. If redistributing dependencies in another package,
 review and include the relevant upstream license notices separately.
 
+When run from a developer checkout that already contains the local typelib,
+the per-user installer copies that fallback together with its Ubuntu copyright
+notice. A public source checkout uses the system-installed typelib instead.
+
 The project's own source is distributed under the MIT license in `LICENSE`.

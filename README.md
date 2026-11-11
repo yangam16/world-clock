@@ -45,6 +45,14 @@ python3 install.py
 
 安装器将程序复制到 `$XDG_DATA_HOME/world-clock`（默认 `~/.local/share/world-clock`），生成应用菜单入口和 `~/.local/bin/world-clock` 命令。系统依赖仍需先安装，用户配置和便签不会被改写。再次运行安装器可更新程序；更新前先从顶栏菜单退出旧实例。
 
+同时创建桌面图标：
+
+```bash
+python3 install.py --desktop
+```
+
+完成后直接双击桌面的 **世界时钟**，或在应用菜单搜索 **World Clock / 世界时钟**，日常使用无需打开终端。若桌面提示启动权限，右键图标选择“允许启动”。重复启动会复用运行状态，不会再创建第二个实例；控制操作仍通过系统顶栏图标完成。
+
 ## 时钟操作
 
 - 顶栏图标 → **添加时区…**：搜索、双击添加。
@@ -90,7 +98,7 @@ python3 install.py
 
 - 已在 Ubuntu 22.04 X11、单屏、底部 Dock 下验证时区换算、夏令时、跨日、窗口排列、穿透区域、便签保存重载和行号栏的实际鼠标拖动/单击。
 - Wayland、其他桌面、多屏/不同缩放组合尚未完成实机验收。Wayland 可能限制窗口坐标、透明度或穿透行为。
-- 尚无开机自启、富文本、多便签、历史版本或单实例保护。请勿重复启动多个实例；它们会共用同一份配置与便签文件。
+- 同一配置目录只允许一个实例运行，避免重复双击导致便签写入冲突。尚无开机自启、富文本、多便签或历史版本。
 - 突然断电或强制结束进程可能丢失尚未保存的编辑。
 
 ## 开发与源码打包
@@ -100,4 +108,4 @@ python3 -m py_compile world_clock.py notes.py install.py scripts/build_source.py
 python3 scripts/build_source.py
 ```
 
-打包器只收录明确列出的公开文件，生成 `dist/world-clock-0.1.0.tar.gz` 及 SHA-256 校验文件。详细贡献要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+打包器只收录明确列出的公开文件，生成 `dist/world-clock-0.1.1.tar.gz` 及 SHA-256 校验文件。详细贡献要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。
