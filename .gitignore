@@ -22,3 +22,11 @@ settings.tmp
 .instance.lock
 .idea/
 .vscode/
+
+# Local-only AppImage authoring tools, recipes, caches and artifacts
+.appimage-local/
+.appimage-tools/
+.appimage-build/
+squashfs-root/
+*.AppImage
+*.squashfs

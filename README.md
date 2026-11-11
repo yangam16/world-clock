@@ -68,7 +68,9 @@ world-clock/
 
 原稿始终自动保存到**程序目录的 `note.txt`**，桌面安装后默认是 `~/.local/share/world-clock/note.txt`。Ctrl+S 导出的快照不会随之后的编辑更新。配置位于 `~/.config/world-clock/`，遵循 XDG 设置。安装升级保留已有原稿和配置。
 
-目前已在 Ubuntu 22.04 X11、单屏和底部 Dock 下验证。Wayland、其他桌面及多屏缩放组合尚未验收；没有 AppImage、开机自启、富文本或多便签功能。更多验证边界见[使用指南](docs/usage.zh-CN.md)。
+目前已在 Ubuntu 22.04 X11、单屏和底部 Dock 下验证。Wayland、其他桌面及多屏缩放组合尚未验收；没有开机自启、富文本或多便签功能。更多验证边界见[使用指南](docs/usage.zh-CN.md)。
+
+AppImage 制作脚本、工具链和缓存仅在本地保留，不随 Git 源码分发。维护者可将 AppImage 成品手动上传到 Releases，用户可按实际附件情况下载。
 
 ## 参与项目
 

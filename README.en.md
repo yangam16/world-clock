@@ -68,7 +68,9 @@ world-clock/
 
 The live draft autosaves to **`note.txt` in the program directory**, normally `~/.local/share/world-clock/note.txt` after desktop installation. Exported snapshots remain unchanged by later edits. Settings are in `~/.config/world-clock/`, respecting XDG configuration. Upgrades preserve the draft and settings.
 
-Validated on Ubuntu 22.04 X11 with one display and a bottom Dock. Wayland, other desktops and multi-display scaling combinations remain unverified. AppImage, automatic startup, rich text and multiple notes are not provided. See the [user guide](docs/usage.en.md) for validation boundaries.
+Validated on Ubuntu 22.04 X11 with one display and a bottom Dock. Wayland, other desktops and multi-display scaling combinations remain unverified. Automatic startup, rich text and multiple notes are not provided. See the [user guide](docs/usage.en.md) for validation boundaries.
+
+AppImage authoring scripts, toolchains and caches are local-only and are not distributed through Git. Maintainers may manually attach built AppImages to Releases; download availability depends on the actual release assets.
 
 ## Get involved
 

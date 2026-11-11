@@ -10,3 +10,8 @@ global-exclude *.py[cod] *.tmp note.txt note-*.txt settings.json .instance.lock 
 prune vendor
 prune dist
 prune build
+
+prune .appimage-local
+prune .appimage-tools
+prune .appimage-build
+global-exclude *.AppImage *.squashfs
