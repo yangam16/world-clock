@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5
+
+- Restore actual note-body click-through and remove body dragging in that mode.
+- Only the gutter receives pointer input while click-through is enabled,
+  including during keyboard editing; keep an ordinary pointer over the gutter
+  and avoid the read-only text area's I-beam cursor.
+- Retain gutter dragging, precise row targets and larger line spacing.
+
 ## 0.1.4
 
 - Drag the note body or blank space while clock click-through is enabled, including

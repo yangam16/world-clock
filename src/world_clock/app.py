@@ -432,16 +432,24 @@ def main():
             self.update_input_region()
 
         def update_input_region(self, *args):
+            # Gtk.TextView otherwise installs an I-beam even when read-only.
+            # In click-through mode only the gutter accepts pointer input;
+            # typing after a row click still goes to the focused editor.
+            for kind in (Gtk.TextWindowType.TEXT, Gtk.TextWindowType.LEFT):
+                note_window = self.note_editor.get_window(kind)
+                if note_window is not None:
+                    name = 'text' if kind == Gtk.TextWindowType.TEXT and not self.locked else 'default'
+                    note_window.set_cursor(Gdk.Cursor.new_from_name(note_window.get_display(), name))
             for widget in [self, self.note_window, *self.clock_windows.values()]:
                 window = widget.get_window()
                 if window is not None:
                     region = cairo.Region() if self.locked else cairo.Region(cairo.RectangleInt(0, 0, widget.get_allocated_width(), widget.get_allocated_height()))
                     if self.locked and self.note_enabled and widget == (self.note_window if self.separate else self):
-                        child = self.note_scroll
+                        child = self.note_editor
                         origin = child.translate_coordinates(widget, 0, 0)
                         if origin is not None:
                             x, y = origin
-                            width = child.get_allocated_width()
+                            width = self.note_editor.GUTTER
                             region.union(cairo.Region(cairo.RectangleInt(x, y, width, child.get_allocated_height())))
                     window.input_shape_combine_region(region, 0, 0)
 

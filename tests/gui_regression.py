@@ -124,24 +124,51 @@ def double_click_locked_body():
 
 
 def check_body():
-    assert background_clicks == [], background_clicks
+    assert len(background_clicks) >= 2, background_clicks
+    cursor = app.note_editor.get_window(Gtk.TextWindowType.TEXT).get_cursor()
+    arrow = Gdk.Cursor.new_from_name(Gdk.Display.get_default(), 'default')
+    assert cursor.get_image().get_pixels() == arrow.get_image().get_pixels()
+    hit, _, _ = pointer.get_window_at_position()
+    assert hit == background.get_child().get_window(), hit
     assert not app.note_editor.get_editable()
     assert text() == 'Synthetic note\nSecond line'
-    drag_body(check_gutter_targets)
+    drag_body_through(lambda: drag_gutter(check_gutter_targets))
 
 
-def drag_body(done):
+def drag_body_through(done):
     before = tuple(app.note_window.get_position())
     original = text()
-    origin = app.note_editor.get_window(Gtk.TextWindowType.TEXT).get_origin()
-    x, y = origin[-2:]
+    clicks = len(background_clicks)
+    _, x, y = app.note_editor.get_window(Gtk.TextWindowType.TEXT).get_origin()
     move(x + 100, y + 20)
+    xtst.XTestFakeButtonEvent(display, 1, 1, 0)
+    x11.XFlush(display)
+    def release():
+        move(x + 140, y + 50)
+        xtst.XTestFakeButtonEvent(display, 1, 0, 0)
+        x11.XFlush(display)
+        later(check)
+    def check():
+        assert tuple(app.note_window.get_position()) == before
+        assert len(background_clicks) > clicks
+        assert text() == original
+        assert not app.note_editor.get_editable()
+        done()
+    later(release)
+
+
+def drag_gutter(done):
+    before = tuple(app.note_window.get_position())
+    original = text()
+    origin = app.note_editor.get_window(Gtk.TextWindowType.LEFT).get_origin()
+    x, y = origin[-2:]
+    move(x + 20, y + 20)
     xtst.XTestFakeButtonEvent(display, 1, 1, 0); x11.XFlush(display)
     def start_motion():
-        move(x + 125, y + 35)
+        move(x + 45, y + 35)
         later(end_motion, 180)
     def end_motion():
-        move(x + 220, y + 80)
+        move(x + 100, y + 60)
         later(release, 180)
     def release():
         xtst.XTestFakeButtonEvent(display, 1, 0, 0); x11.XFlush(display)
@@ -188,7 +215,7 @@ def check_second_row():
     editor = app.note_editor
     assert editor.get_editable()
     assert editor.get_buffer().get_iter_at_mark(editor.get_buffer().get_insert()).get_line() == 1
-    drag_body(select_next_blank_row)
+    drag_body_through(lambda: drag_gutter(select_next_blank_row))
 
 
 def select_next_blank_row():
@@ -292,7 +319,7 @@ def check_error():
     assert app.note_scroll.get_parent() == app.note_window
     config = json.loads((Path(TEMP.name) / 'world-clock/settings.json').read_text())
     assert config['language'] == 'en'
-    print('PASS: locked body drag before/after editing, exact row targets/gaps/blank line, row spacing, Ctrl+S snapshots, autosave, language switch, double-click isolation and window modes', flush=True)
+    print('PASS: body click/drag pass-through before/after editing, default pointer, gutter drag, exact row targets/gaps/blank line, row spacing, Ctrl+S snapshots, autosave, language switch and window modes', flush=True)
     finish()
 
 

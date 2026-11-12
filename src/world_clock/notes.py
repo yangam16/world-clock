@@ -117,7 +117,7 @@ class NoteEditor(Gtk.TextView):
 
     def click_gutter(self, widget, event):
         gutter = event.window == self.get_window(Gtk.TextWindowType.LEFT)
-        if not gutter and not self.owner.locked:
+        if not gutter:
             return False
         if gutter and event.button == 1 and event.state & Gdk.ModifierType.CONTROL_MASK:
             self.get_toplevel().begin_move_drag(event.button, int(event.x_root), int(event.y_root), event.time)
@@ -127,13 +127,11 @@ class NoteEditor(Gtk.TextView):
             return True
         if event.button != 1:
             return self.owner.locked
-        if not gutter and self.owner.note_editing:
-            self.owner.finish_note_editing()
         if self.has_dialog:
             return True
         # Delay editing until release: a drag must not insert a blank line or
         # move the text cursor before the window manager takes over the pointer.
-        number = self._clicked_line_number(event.x, event.y) if gutter else None
+        number = self._clicked_line_number(event.x, event.y)
         self.gutter_press = (event.x_root, event.y_root, number, event.time)
         return True
 

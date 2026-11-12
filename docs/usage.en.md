@@ -24,10 +24,10 @@ At startup, the system zone is resolved from `TZ`, `/etc/localtime`, or `/etc/ti
 
 Enable **Show note** in the top-bar menu. With separate clock windows enabled, the note has its own window; otherwise it appears below the clocks. Hiding it or switching modes preserves the text.
 
-- With click-through enabled, clocks remain click-through. The note absorbs clicks so files behind it cannot open. Left-drag the body, blank space or gutter to move the note; dragging ends editing and saves the draft. Only clicking and releasing a pale-blue line-number target enters that logical line for editing. Press **Esc** or switch windows to save and lock the body again.
+- With click-through enabled, clocks and the note body pass mouse input through. The body cannot drag the note and does not impose an I-beam pointer (the window behind it determines the pointer). Only the gutter accepts mouse input: click and release a pale-blue line-number target to edit that logical line with the keyboard. The body remains click-through while typing. Press **Esc** or switch windows to save and end editing. Body clicks go to the window behind it, including desktop files.
 - With click-through disabled, click the body directly to edit.
 - Increased line spacing and pale number targets make rows easier to select; the active row is slightly darker. Gaps and blank gutter space beyond the final row do not enter editing. The next blank line has a clickable number; clicking it inserts a newline. Visual wrapping does not add logical line numbers.
-- **Left-drag the gutter** to move the window without altering text. With click-through enabled, the body can also be dragged. Disable click-through to select text normally with the mouse. Combined mode moves the whole window. Ctrl+left-drag on the gutter is also supported.
+- **Left-drag the gutter** to move the window without altering text. With click-through enabled, the body cannot drag the note. Disable click-through to select text normally with the mouse. Combined mode moves the whole window. Ctrl+left-drag on the gutter is also supported.
 - **Right-drag the gutter** to resize a separate note window. Position and size are saved.
 - The live draft autosaves about 0.8 seconds after typing stops. **Ctrl+S** or **Save note snapshot…** opens a save dialog for exporting the current text. Subsequent edits update only the live draft, leaving exported snapshots unchanged.
 - The live draft stays at `note.txt` in the program directory. A snapshot cannot overwrite that same file; its suggested name includes a timestamp. Canceling the dialog keeps the text and autosave destination unchanged. Hiding or quitting saves the draft. Save failures show an error and retain the in-memory text.
@@ -46,7 +46,7 @@ The app uses the computer's system clock and provides no cloud sync or network t
 
 ## Validation and limitations
 
-- Validated on Ubuntu 22.04 X11 with one display and a bottom Dock: time zones, DST, date changes, layout, input regions, note save/reload, actual gutter drag/click, Ctrl+S, snapshot isolation, language switching, and locked-note double-click interception.
+- Validated on Ubuntu 22.04 X11 with one display and a bottom Dock: time zones, DST, date changes, layout, input regions, note save/reload, actual gutter drag/click, Ctrl+S, snapshot isolation, language switching, and body click-through, gutter dragging and pointer appearance.
 - Wayland, other desktops, multiple displays, and mixed scaling have not completed hardware acceptance. Wayland may restrict positioning, opacity, or click-through behavior.
 - Only one instance can share a configuration or program directory. The program directory must be writable; per-user installation is recommended.
 - No automatic startup, rich text, multiple notes, or version history. Sudden power loss or a forced kill can lose unsaved edits.
