@@ -127,6 +127,86 @@ def check_body():
     assert background_clicks == [], background_clicks
     assert not app.note_editor.get_editable()
     assert text() == 'Synthetic note\nSecond line'
+    drag_body(check_gutter_targets)
+
+
+def drag_body(done):
+    before = tuple(app.note_window.get_position())
+    original = text()
+    origin = app.note_editor.get_window(Gtk.TextWindowType.TEXT).get_origin()
+    x, y = origin[-2:]
+    move(x + 100, y + 20)
+    xtst.XTestFakeButtonEvent(display, 1, 1, 0); x11.XFlush(display)
+    def start_motion():
+        move(x + 125, y + 35)
+        later(end_motion, 180)
+    def end_motion():
+        move(x + 220, y + 80)
+        later(release, 180)
+    def release():
+        xtst.XTestFakeButtonEvent(display, 1, 0, 0); x11.XFlush(display)
+        later(check_drag)
+    def check_drag():
+        after = tuple(app.note_window.get_position())
+        assert after[0] - before[0] > 50 and after[1] - before[1] > 20, (before, after)
+        assert text() == original
+        assert not app.note_editor.get_editable()
+        done()
+    later(start_motion, 150)
+
+
+def check_gutter_targets():
+    # Blank gutter space must not activate editing or append a newline.
+    origin = app.note_editor.get_window(Gtk.TextWindowType.LEFT).get_origin()
+    x, y = origin[-2:]
+    move(x + 20, y + 180); click()
+    later(check_row_gap)
+
+
+def check_row_gap():
+    editor = app.note_editor
+    assert not editor.get_editable() and text() == 'Synthetic note\nSecond line'
+    top, height = editor.get_line_yrange(editor.get_buffer().get_start_iter())
+    assert height >= 28, height
+    _, wy = editor.buffer_to_window_coords(Gtk.TextWindowType.LEFT, 0, top + 1)
+    _, x, y = editor.get_window(Gtk.TextWindowType.LEFT).get_origin()
+    move(x + 20, y + wy); click()
+    later(select_second_row)
+
+
+def select_second_row():
+    editor = app.note_editor
+    assert not editor.get_editable()
+    top, height = editor.get_line_yrange(editor.get_buffer().get_iter_at_line(1))
+    _, wy = editor.buffer_to_window_coords(Gtk.TextWindowType.LEFT, 0, top + height // 2)
+    _, x, y = editor.get_window(Gtk.TextWindowType.LEFT).get_origin()
+    move(x + 20, y + wy); click()
+    later(check_second_row)
+
+
+def check_second_row():
+    editor = app.note_editor
+    assert editor.get_editable()
+    assert editor.get_buffer().get_iter_at_mark(editor.get_buffer().get_insert()).get_line() == 1
+    drag_body(select_next_blank_row)
+
+
+def select_next_blank_row():
+    editor = app.note_editor
+    top, height = editor.get_line_yrange(editor.get_buffer().get_end_iter())
+    _, wy = editor.buffer_to_window_coords(Gtk.TextWindowType.LEFT, 0, top + height + height // 2)
+    _, x, y = editor.get_window(Gtk.TextWindowType.LEFT).get_origin()
+    move(x + 20, y + wy); click()
+    later(check_next_blank_row)
+
+
+def check_next_blank_row():
+    editor = app.note_editor
+    assert editor.get_editable() and text() == 'Synthetic note\nSecond line\n'
+    assert editor.get_buffer().get_iter_at_mark(editor.get_buffer().get_insert()).get_line() == 2
+    app.note_window.get_window().get_display().sync()
+    Gdk.pixbuf_get_from_window(app.note_window.get_window(), 0, 0, *app.note_window.get_size()).savev('/tmp/world-clock-note-row-targets.png', 'png', [], [])
+    editor.get_buffer().set_text('Synthetic note\nSecond line')
     # Real single click on the gutter enters editing; then real Ctrl+S.
     origin = app.note_editor.get_window(Gtk.TextWindowType.LEFT).get_origin()
     x, y = origin[-2:]
@@ -212,7 +292,7 @@ def check_error():
     assert app.note_scroll.get_parent() == app.note_window
     config = json.loads((Path(TEMP.name) / 'world-clock/settings.json').read_text())
     assert config['language'] == 'en'
-    print('PASS: actual Ctrl+S, snapshot chooser/cancel/save, immutable snapshot after edits, program-directory autosave, nonblocking error, English/Chinese switch, locked-note double-click isolation, window modes', flush=True)
+    print('PASS: locked body drag before/after editing, exact row targets/gaps/blank line, row spacing, Ctrl+S snapshots, autosave, language switch, double-click isolation and window modes', flush=True)
     finish()
 
 

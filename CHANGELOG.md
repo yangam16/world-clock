@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.4
+
+- Drag the note body or blank space while clock click-through is enabled, including
+  after entering editing; moving saves the draft without changing its text.
+- Only clicking a line-number target enters that logical line. Gutter gaps and
+  blank space beyond the next line no longer activate editing or append newlines.
+- Larger line spacing and pale number targets, with a darker active-row hint.
+- Real X11 regression checks cover both body-drag states, precise row selection,
+  gutter gaps, the final blank line and snapshot saving.
+
 ## 0.1.3
 
 - Added English README, desktop launcher tutorials and LLM-development attribution.

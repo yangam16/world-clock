@@ -10,7 +10,7 @@ from gi.repository import Gtk, Gdk, GLib, Pango, PangoCairo
 
 
 class NoteEditor(Gtk.TextView):
-    GUTTER = 44
+    GUTTER = 52
 
     def __init__(self, owner, path, legacy_path=None):
         super().__init__()
@@ -26,7 +26,10 @@ class NoteEditor(Gtk.TextView):
         self.set_left_margin(8)
         self.set_right_margin(10)
         self.set_top_margin(8)
-        self.set_bottom_margin(32)
+        self.set_bottom_margin(48)
+        self.set_pixels_above_lines(6)
+        self.set_pixels_below_lines(6)
+        self.set_pixels_inside_wrap(2)
         self.set_border_window_size(Gtk.TextWindowType.LEFT, self.GUTTER)
         self.set_monospace(True)
         self.set_editable(False)
@@ -47,6 +50,8 @@ class NoteEditor(Gtk.TextView):
             GLib.idle_add(self.report_error, self.owner.tr('便签读取失败，已禁止覆盖原文件：{error}', error=error))
         self.buffer.set_text(text)
         self.buffer.connect('changed', self.changed)
+        self.buffer.connect('mark-set', lambda *args: self.queue_draw())
+        self.connect('notify::editable', lambda *args: self.queue_draw())
         self.connect('button-press-event', self.click_gutter)
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK)
         self.connect('motion-notify-event', self.move_gutter)
@@ -60,6 +65,29 @@ class NoteEditor(Gtk.TextView):
     def has_dialog(self):
         return self.save_dialog is not None or self.error_dialog is not None
 
+    def _gutter_rows(self):
+        visible = self.get_visible_rect()
+        start, _ = self.get_line_at_y(visible.y)
+        for number in range(start.get_line(), self.buffer.get_line_count()):
+            line = self.buffer.get_iter_at_line(number)
+            y, height = self.get_line_yrange(line)
+            if y > visible.y + visible.height:
+                break
+            yield number, y, min(height, self._number_row_height())
+        end = self.buffer.get_end_iter()
+        if end.get_line_offset() > 0:
+            y, height = self.get_line_yrange(end)
+            yield end.get_line() + 1, y + height, self._number_row_height()
+
+    def _number_row_height(self):
+        return self.create_pango_layout('0').get_pixel_size()[1] + self.get_pixels_above_lines() + self.get_pixels_below_lines()
+
+    def _clicked_line_number(self, x, gutter_y):
+        if not 6 <= x < self.GUTTER - 6:
+            return None
+        _, y = self.window_to_buffer_coords(Gtk.TextWindowType.LEFT, int(x), int(gutter_y))
+        return next((number for number, top, height in self._gutter_rows() if top + 2 <= y < top + height - 2), None)
+
     def do_draw(self, cr):
         Gtk.TextView.do_draw(self, cr)
         window = self.get_window(Gtk.TextWindowType.LEFT)
@@ -69,51 +97,44 @@ class NoteEditor(Gtk.TextView):
         Gtk.cairo_transform_to_window(cr, self, window)
         cr.rectangle(0, 0, self.GUTTER, self.get_allocated_height())
         cr.clip()
-        cr.set_source_rgb(0.93, 0.93, 0.91)
+        cr.set_source_rgb(0.96, 0.96, 0.94)
         cr.paint()
-        visible = self.get_visible_rect()
-        def draw_number(number, y):
+        selected = self.buffer.get_iter_at_mark(self.buffer.get_insert()).get_line()
+        for number, y, height in self._gutter_rows():
             _, wy = self.buffer_to_window_coords(Gtk.TextWindowType.LEFT, 0, y)
-            layout = self.create_pango_layout(str(number))
+            color = (0.82, 0.91, 0.95) if self.get_editable() and number == selected else (0.90, 0.95, 0.97)
+            cr.set_source_rgb(*color)
+            cr.rectangle(6, wy + 2, self.GUTTER - 12, height - 4)
+            cr.fill()
+            layout = self.create_pango_layout(str(number + 1))
             layout.set_font_description(Pango.FontDescription('Monospace 10'))
-            width, _ = layout.get_pixel_size()
-            cr.set_source_rgb(0.43, 0.49, 0.51)
-            cr.move_to(self.GUTTER - width - 8, wy)
+            width, text_height = layout.get_pixel_size()
+            cr.set_source_rgb(0.32, 0.47, 0.53)
+            cr.move_to((self.GUTTER - width) / 2, wy + (height - text_height) / 2)
             PangoCairo.show_layout(cr, layout)
-        line, _ = self.get_line_at_y(visible.y)
-        # forward_line() returns False when it lands on the buffer end,
-        # including a valid final empty line. Draw every logical line explicitly.
-        for number in range(line.get_line(), self.buffer.get_line_count()):
-            line = self.buffer.get_iter_at_line(number)
-            y, height = self.get_line_yrange(line)
-            if y > visible.y + visible.height:
-                break
-            draw_number(line.get_line() + 1, y)
-        end = self.buffer.get_end_iter()
-        if end.get_line_offset() > 0:
-            y, height = self.get_line_yrange(end)
-            draw_number(end.get_line() + 2, y + height)
         cr.restore()
         return False
 
     def click_gutter(self, widget, event):
-        if event.window != self.get_window(Gtk.TextWindowType.LEFT):
-            if self.owner.locked and not self.owner.note_editing:
-                # Read-only note bodies absorb clicks rather than opening a
-                # file/shortcut on the desktop behind a translucent note.
-                return True
+        gutter = event.window == self.get_window(Gtk.TextWindowType.LEFT)
+        if not gutter and not self.owner.locked:
             return False
-        if event.button == 1 and event.state & Gdk.ModifierType.CONTROL_MASK:
+        if gutter and event.button == 1 and event.state & Gdk.ModifierType.CONTROL_MASK:
             self.get_toplevel().begin_move_drag(event.button, int(event.x_root), int(event.y_root), event.time)
             return True
-        if self.owner.separate and event.button == 3:
+        if gutter and self.owner.separate and event.button == 3:
             self.owner.note_window.begin_resize_drag(Gdk.WindowEdge.SOUTH_EAST, event.button, int(event.x_root), int(event.y_root), event.time)
             return True
         if event.button != 1:
-            return False
+            return self.owner.locked
+        if not gutter and self.owner.note_editing:
+            self.owner.finish_note_editing()
+        if self.has_dialog:
+            return True
         # Delay editing until release: a drag must not insert a blank line or
         # move the text cursor before the window manager takes over the pointer.
-        self.gutter_press = (event.x_root, event.y_root, event.y, event.time)
+        number = self._clicked_line_number(event.x, event.y) if gutter else None
+        self.gutter_press = (event.x_root, event.y_root, number, event.time)
         return True
 
     def move_gutter(self, widget, event):
@@ -122,28 +143,32 @@ class NoteEditor(Gtk.TextView):
         x, y, _, _ = self.gutter_press
         if self.drag_check_threshold(int(x), int(y), int(event.x_root), int(event.y_root)):
             self.gutter_press = None
+            if self.owner.locked:
+                self.owner.finish_note_editing()
+                if self.has_dialog:
+                    return True
             self.get_toplevel().begin_move_drag(1, int(x), int(y), event.time)
         return True
 
     def release_gutter(self, widget, event):
         if event.button != 1 or self.gutter_press is None:
             return False
-        _, _, y, timestamp = self.gutter_press
+        _, _, number, timestamp = self.gutter_press
         self.gutter_press = None
-        self.edit_line(y, timestamp)
+        if number is not None:
+            self.edit_line_number(number, timestamp)
         return True
 
-    def edit_line(self, gutter_y, timestamp):
+    def edit_line_number(self, number, timestamp):
         self.owner.start_note_editing()
-        _, y = self.window_to_buffer_coords(Gtk.TextWindowType.LEFT, 0, int(gutter_y))
         end = self.buffer.get_end_iter()
-        last_y, height = self.get_line_yrange(end)
-        if end.get_line_offset() > 0 and y >= last_y + height:
+        if number == self.buffer.get_line_count() and end.get_line_offset() > 0:
             self.buffer.insert(end, '\n')
             line = self.buffer.get_end_iter()
         else:
-            line, _ = self.get_line_at_y(y)
+            line = self.buffer.get_iter_at_line(number)
         self.buffer.place_cursor(line)
+        self.scroll_to_iter(line, 0.0, False, 0.0, 0.0)
         self.grab_focus()
         self.get_toplevel().present_with_time(timestamp)
 

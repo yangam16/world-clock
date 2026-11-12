@@ -24,10 +24,10 @@ At startup, the system zone is resolved from `TZ`, `/etc/localtime`, or `/etc/ti
 
 Enable **Show note** in the top-bar menu. With separate clock windows enabled, the note has its own window; otherwise it appears below the clocks. Hiding it or switching modes preserves the text.
 
-- With click-through enabled, clocks remain click-through. The locked note body absorbs clicks so double-clicking cannot open a desktop file or WPS behind it. Click and release a line number to edit. Press **Esc** or switch to another window to save the draft and lock the body again.
+- With click-through enabled, clocks remain click-through. The note absorbs clicks so files behind it cannot open. Left-drag the body, blank space or gutter to move the note; dragging ends editing and saves the draft. Only clicking and releasing a pale-blue line-number target enters that logical line for editing. Press **Esc** or switch windows to save and lock the body again.
 - With click-through disabled, click the body directly to edit.
-- Line numbers include a clickable next blank line. Clicking that number inserts a newline; visual wrapping does not add logical line numbers.
-- **Left-drag the line-number gutter** to move the window without altering text. In combined mode, this moves the whole window. Ctrl+left-drag is also supported.
+- Increased line spacing and pale number targets make rows easier to select; the active row is slightly darker. Gaps and blank gutter space beyond the final row do not enter editing. The next blank line has a clickable number; clicking it inserts a newline. Visual wrapping does not add logical line numbers.
+- **Left-drag the gutter** to move the window without altering text. With click-through enabled, the body can also be dragged. Disable click-through to select text normally with the mouse. Combined mode moves the whole window. Ctrl+left-drag on the gutter is also supported.
 - **Right-drag the gutter** to resize a separate note window. Position and size are saved.
 - The live draft autosaves about 0.8 seconds after typing stops. **Ctrl+S** or **Save note snapshot…** opens a save dialog for exporting the current text. Subsequent edits update only the live draft, leaving exported snapshots unchanged.
 - The live draft stays at `note.txt` in the program directory. A snapshot cannot overwrite that same file; its suggested name includes a timestamp. Canceling the dialog keeps the text and autosave destination unchanged. Hiding or quitting saves the draft. Save failures show an error and retain the in-memory text.

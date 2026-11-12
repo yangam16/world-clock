@@ -1,3 +1,3 @@
 """World Clock: desktop time zones and a plain-text sticky note."""
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
