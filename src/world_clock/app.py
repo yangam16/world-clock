@@ -149,7 +149,7 @@ def main():
             self.set_skip_taskbar_hint(True)
             self.set_default_size(660, 430)
             self.set_keep_above(self.on_top)
-            self.set_opacity(self.opacity)
+            self.connect('realize', self.apply_window_opacity)
             self.connect('destroy', Gtk.main_quit)
             self.connect('size-allocate', self.update_input_region)
             self.connect('map', self.update_input_region)
@@ -192,7 +192,7 @@ def main():
             self.note_window.set_default_size(max(240, self.note_geometry[2]), max(180, self.note_geometry[3]))
             self.note_window.set_skip_taskbar_hint(True)
             self.note_window.set_keep_above(self.on_top)
-            self.note_window.set_opacity(self.opacity)
+            self.note_window.connect('realize', self.apply_window_opacity)
             self.note_window.connect('size-allocate', self.update_input_region)
             self.note_window.connect('map', self.update_input_region)
             self.note_window.connect('focus-out-event', self.finish_note_editing)
@@ -416,12 +416,16 @@ def main():
             self.note_window.set_keep_above(self.on_top)
             self.save()
 
+        def apply_window_opacity(self, window):
+            # GTK 3 can cache opacity before the native window exists and then
+            # skip applying it when that window is created.
+            if window.get_realized():
+                Gtk.Widget.set_opacity(window, self.opacity)
+
         def change_opacity(self, slider):
             self.opacity = slider.get_value() / 100
-            self.set_opacity(self.opacity)
-            for window in self.clock_windows.values():
-                window.set_opacity(self.opacity)
-            self.note_window.set_opacity(self.opacity)
+            for window in [self, self.note_window, *self.clock_windows.values()]:
+                self.apply_window_opacity(window)
             self.save()
 
         def toggle_lock(self, button):
@@ -553,7 +557,7 @@ def main():
                     window.set_skip_taskbar_hint(True)
                     window.set_skip_pager_hint(True)
                     window.set_keep_above(self.on_top)
-                    window.set_opacity(self.opacity)
+                    window.connect('realize', self.apply_window_opacity)
                     window.add(card)
                     self.clock_windows[zone] = window
                     window.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)

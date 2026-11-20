@@ -43,7 +43,7 @@ Real X11 interaction checks:
 python3 tests/gui_regression.py
 ```
 
-The GUI checks need a real X11 session and `libXtst.so.6`. They copy the app into a temporary directory, use synthetic text, and restore the pointer. They cover Ctrl+S, snapshot isolation, migration, autosave, errors, language switching and double-click interception. They do not validate Wayland or all hardware/display combinations.
+The GUI checks need an X11 desktop session, `libXtst.so.6`, and `xprop`. They copy the app into a temporary directory, use synthetic text, and restore the pointer. They check the native window opacity restored from saved settings, Ctrl+S, snapshot isolation, migration, autosave, errors, language switching and double-click interception. They do not validate Wayland or all hardware/display combinations.
 
 Changing only `XDG_CONFIG_HOME` does not isolate the draft: it belongs to the program directory. Use a disposable source copy for manual experiments. Never use real private notes as test fixtures.
 

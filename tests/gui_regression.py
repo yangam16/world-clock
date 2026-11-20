@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import runpy
+import subprocess
 import sys
 import tempfile
 import shutil
@@ -28,6 +29,8 @@ os.environ['LANG'] = 'en_US.UTF-8'
 legacy = Path(TEMP.name) / 'world-clock/note.txt'
 legacy.parent.mkdir()
 legacy.write_text('Legacy synthetic note', encoding='utf-8')
+settings = legacy.with_name('settings.json')
+settings.write_text(json.dumps({'zones': ['UTC', 'Asia/Tokyo'], 'opacity': 0.6}), encoding='utf-8')
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -92,13 +95,26 @@ def text():
     return buffer.get_text(*buffer.get_bounds(), True)
 
 
+def check_native_opacity(widget, opacity):
+    window = widget.get_window()
+    window.get_display().sync()
+    result = subprocess.check_output(
+        ['xprop', '-id', str(window.get_xid()), '_NET_WM_WINDOW_OPACITY'], text=True)
+    expected = round(opacity * 0xffffffff)
+    assert result.partition(' = ')[2].strip() == str(expected), (widget.get_title(), result)
+
+
 def start():
     global app, background
     app = next(w for w in Gtk.Window.list_toplevels() if hasattr(w, 'indicator_menu'))
+    assert app.opacity == 0.6
+    for window in app.clock_windows.values():
+        check_native_opacity(window, 0.6)
     assert text() == 'Legacy synthetic note'
     assert (APP_ROOT / 'note.txt').read_text() == 'Legacy synthetic note'
     app.change_language('en')
     app.note_item.set_active(True)
+    check_native_opacity(app.note_window, 0.6)
     background = Gtk.Window(title='World Clock synthetic click receiver')
     background.set_default_size(600, 400)
     receiver = Gtk.EventBox()
@@ -279,7 +295,7 @@ def accept_location():
 def check_saved():
     target = Path(TEMP.name) / 'chosen-note.txt'
     assert target.read_text() == 'Synthetic note\nSecond line'
-    config = json.loads((Path(TEMP.name) / 'world-clock/settings.json').read_text())
+    config = json.loads(settings.read_text())
     assert 'note_path' not in config
     assert app.note_editor.path == APP_ROOT / 'note.txt'
     app.note_editor.get_buffer().insert_at_cursor('!')
@@ -315,11 +331,15 @@ def check_error():
     assert app.note_editor is old_editor and text() == before
     app.separate_item.set_active(False)
     assert app.note_scroll.get_parent() == app.root
+    check_native_opacity(app, 0.6)
     app.separate_item.set_active(True)
     assert app.note_scroll.get_parent() == app.note_window
-    config = json.loads((Path(TEMP.name) / 'world-clock/settings.json').read_text())
+    for window in app.clock_windows.values():
+        check_native_opacity(window, 0.6)
+    check_native_opacity(app.note_window, 0.6)
+    config = json.loads(settings.read_text())
     assert config['language'] == 'en'
-    print('PASS: body click/drag pass-through before/after editing, default pointer, gutter drag, exact row targets/gaps/blank line, row spacing, Ctrl+S snapshots, autosave, language switch and window modes', flush=True)
+    print('PASS: opacity restoration, body click/drag pass-through before/after editing, default pointer, gutter drag, exact row targets/gaps/blank line, row spacing, Ctrl+S snapshots, autosave, language switch and window modes', flush=True)
     finish()
 
 
