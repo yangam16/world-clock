@@ -77,6 +77,13 @@ def control_s():
     x11.XFlush(display)
 
 
+def press_key(keyval):
+    key = x11.XKeysymToKeycode(display, keyval)
+    for pressed in (1, 0):
+        xtst.XTestFakeKeyEvent(display, key, pressed, 0)
+    x11.XFlush(display)
+
+
 def later(callback, delay=350):
     def guarded():
         try:
@@ -249,7 +256,13 @@ def check_next_blank_row():
     assert editor.get_buffer().get_iter_at_mark(editor.get_buffer().get_insert()).get_line() == 2
     app.note_window.get_window().get_display().sync()
     Gdk.pixbuf_get_from_window(app.note_window.get_window(), 0, 0, *app.note_window.get_size()).savev('/tmp/world-clock-note-row-targets.png', 'png', [], [])
-    editor.get_buffer().set_text('Synthetic note\nSecond line')
+    press_key(Gdk.KEY_Return)
+    later(check_note_return)
+
+
+def check_note_return():
+    assert text() == 'Synthetic note\nSecond line\n\n'
+    app.note_editor.get_buffer().set_text('Synthetic note\nSecond line')
     # Real single click on the gutter enters editing; then real Ctrl+S.
     origin = app.note_editor.get_window(Gtk.TextWindowType.LEFT).get_origin()
     x, y = origin[-2:]
@@ -332,6 +345,38 @@ def check_error():
     app.separate_item.set_active(False)
     assert app.note_scroll.get_parent() == app.root
     check_native_opacity(app, 0.6)
+    app.note_item.set_active(False)
+    assert not app.get_accept_focus()
+    assert not app.activate_default()
+    app.note_item.set_active(True)
+    app.note_editor.get_buffer().set_text('Combined note')
+    later(click_combined_gutter)
+
+
+def click_combined_gutter():
+    editor = app.note_editor
+    top, height = editor.get_line_yrange(editor.get_buffer().get_start_iter())
+    _, wy = editor.buffer_to_window_coords(Gtk.TextWindowType.LEFT, 0, top + height // 2)
+    _, x, y = editor.get_window(Gtk.TextWindowType.LEFT).get_origin()
+    move(x + 20, y + wy)
+    click()
+    later(type_in_combined_note)
+
+
+def type_in_combined_note():
+    assert app.get_accept_focus() and app.note_editor.has_focus()
+    press_key(Gdk.KEY_Return)
+    later(finish_combined_note)
+
+
+def finish_combined_note():
+    assert text() == '\nCombined note'
+    press_key(Gdk.KEY_Escape)
+    later(check_combined_escape)
+
+
+def check_combined_escape():
+    assert not app.get_accept_focus() and not app.note_editor.get_editable()
     app.separate_item.set_active(True)
     assert app.note_scroll.get_parent() == app.note_window
     for window in app.clock_windows.values():
@@ -339,7 +384,92 @@ def check_error():
     check_native_opacity(app.note_window, 0.6)
     config = json.loads(settings.read_text())
     assert config['language'] == 'en'
-    print('PASS: opacity restoration, body click/drag pass-through before/after editing, default pointer, gutter drag, exact row targets/gaps/blank line, row spacing, Ctrl+S snapshots, autosave, language switch and window modes', flush=True)
+    check_clock_keys()
+
+
+def check_clock_keys():
+    app.note_item.set_active(False)
+    received = []
+
+    def on_key(widget, event):
+        received.append(event.keyval)
+        return True
+
+    def remap_clocks():
+        assert background.is_active()
+        app.separate_item.set_active(False)
+        app.separate_item.set_active(True)
+        later(send_keys)
+
+    def send_keys():
+        assert background.is_active()
+        press_key(Gdk.KEY_Return)
+        press_key(Gdk.KEY_space)
+        later(check_received)
+
+    def check_received():
+        background.disconnect(handler)
+        assert received == [Gdk.KEY_Return, Gdk.KEY_space], received
+        assert json.loads(settings.read_text())['zones'] == ['UTC', 'Asia/Tokyo']
+        check_zone_removal()
+
+    handler = background.connect('key-press-event', on_key)
+    background.present()
+    later(remap_clocks)
+
+
+def check_zone_removal():
+    clock = next(window for window in Gtk.Window.list_toplevels()
+                 if window.get_title() == 'World Clock · Asia/Tokyo')
+    button = next(child for child in clock.get_child().get_children() if isinstance(child, Gtk.Button))
+
+    def click_remove(response):
+        defaults = []
+
+        def answer():
+            dialog = next(window for window in Gtk.Window.list_toplevels()
+                          if isinstance(window, Gtk.MessageDialog) and window.get_visible())
+            defaults.append(dialog.get_response_for_widget(dialog.get_default_widget()))
+            dialog.response(response)
+            return False
+
+        source = GLib.idle_add(answer)
+        button.clicked()
+        if not defaults:
+            GLib.source_remove(source)
+            return False
+        assert defaults == [Gtk.ResponseType.CANCEL]
+        return True
+
+    assert not clock.get_focus_on_map() and not clock.get_accept_focus()
+    assert not button.is_sensitive() and not clock.activate_default()
+    app.lock_item.set_active(False)
+    assert clock.get_accept_focus() and button.is_sensitive()
+    button.grab_focus()
+    assert clock.get_focus() == button
+    app.lock_item.set_active(True)
+    assert not button.is_sensitive() and not clock.activate_default()
+    # Even a clicked signal already queued when the lock changed must be ignored.
+    assert not click_remove(Gtk.ResponseType.OK)
+    assert json.loads(settings.read_text())['zones'] == ['UTC', 'Asia/Tokyo']
+    app.lock_item.set_active(False)
+    assert click_remove(Gtk.ResponseType.CANCEL)
+    assert json.loads(settings.read_text())['zones'] == ['UTC', 'Asia/Tokyo']
+    temp_settings = settings.with_suffix('.tmp')
+    temp_settings.mkdir()
+    try:
+        click_remove(Gtk.ResponseType.OK)
+        assert json.loads(settings.read_text())['zones'] == ['UTC', 'Asia/Tokyo']
+        error = next(window for window in Gtk.Window.list_toplevels()
+                     if isinstance(window, Gtk.MessageDialog) and window.get_visible())
+        assert error.get_property('message-type') == Gtk.MessageType.ERROR
+        error.response(Gtk.ResponseType.CLOSE)
+    finally:
+        temp_settings.rmdir()
+    click_remove(Gtk.ResponseType.OK)
+    assert json.loads(settings.read_text())['zones'] == ['UTC']
+    assert all(window.get_title() != 'World Clock · Asia/Tokyo' for window in Gtk.Window.list_toplevels())
+    print('PASS: opacity, click-through, gutter input, note typing in both layouts, snapshots, autosave, language, keyboard focus and confirmed time zone removal', flush=True)
     finish()
 
 

@@ -7,7 +7,7 @@
 - **Add time zone…**: search for a city or IANA zone; double-click to add it. Common cities also support Chinese search terms.
 - **Separate clock windows**: switch between separate windows and a combined list.
 - **Align along bottom (above Dock)**: select a display and arrange clocks within its work area. Additional cities wrap to another row. Use it again after changing display configuration.
-- Uncheck **Clock click-through** to drag clock windows or remove a city with ×.
+- **Clock click-through** is on by default and disables the × button, so Enter and Space cannot remove a city. Turn click-through off to drag a clock or use × to remove a city. The confirmation defaults to **Cancel**.
 - **Opacity…** and **Always on top** adjust presentation.
 - **Language / 语言 → English / 简体中文** switches UI language immediately and remembers the selection. The initial language follows the environment, defaulting to English outside Chinese locales. System controls inside native file dialogs may follow the desktop's language.
 - **Quit World Clock** saves the live draft and exits.
@@ -19,6 +19,8 @@ Reset to one clock in the system time zone while preserving other preferences:
 ```
 
 At startup, the system zone is resolved from `TZ`, `/etc/localtime`, or `/etc/timezone`, with UTC as a fallback. Saved city selections remain in effect. Changing the system time zone while the app is running does not replace selected cities.
+
+Clocks stay in the list and display a message when their time zone data is temporarily unavailable. If preferences fail to load at startup, the app shows an error and protects the existing file. Restart after repairing the file to resume saving preferences.
 
 ## Sticky note
 

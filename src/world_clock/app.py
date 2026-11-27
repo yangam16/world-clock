@@ -8,7 +8,7 @@ import signal
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo, available_timezones
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 from . import __version__
 from .i18n import Translator
 
@@ -53,7 +53,9 @@ CONFIG = Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home() / '.config'))) /
 
 
 def clock_values(zone, instant=None):
-    now = (instant or datetime.now(timezone.utc)).astimezone(ZoneInfo(zone))
+    if isinstance(zone, str):
+        zone = ZoneInfo(zone)
+    now = (instant or datetime.now(timezone.utc)).astimezone(zone)
     offset = now.strftime('%z')
     return now.strftime('%m/%d'), now.strftime('%H:%M:%S'), now.tzname(), f'UTC{offset[:3]}:{offset[3:]}', now.strftime('%Y-%m-%d')
 
@@ -61,25 +63,16 @@ def clock_values(zone, instant=None):
 def read_settings():
     try:
         data = json.loads(CONFIG.read_text(encoding='utf-8'))
-        if not isinstance(data, dict):
-            raise ValueError('Expected object')
-        zones = data.get('zones', DEFAULT_ZONES)
-        if not isinstance(zones, list):
-            raise ValueError('Expected zone list')
-        valid = available_timezones()
-        zones = list(dict.fromkeys(z for z in zones if isinstance(z, str) and z in valid))
-        opacity = data.get('opacity', 0.85)
-        if isinstance(opacity, bool) or not isinstance(opacity, (float, int)):
-            opacity = 0.85
-        positions = data.get('positions', {})
-        if not isinstance(positions, dict):
-            positions = {}
-        positions = {z: p for z, p in positions.items()
-                     if isinstance(p, list) and len(p) == 2
-                     and all(type(n) is int for n in p)}
-        return zones or DEFAULT_ZONES.copy(), data.get('on_top') is True, max(0.3, min(1.0, opacity)), data.get('separate', True) is not False, positions
-    except (OSError, ValueError, TypeError):
-        return DEFAULT_ZONES.copy(), False, 0.85, True, {}
+    except FileNotFoundError:
+        data = {}
+    if not isinstance(data, dict):
+        raise ValueError('Expected object')
+    zones = data.get('zones', DEFAULT_ZONES)
+    if not isinstance(zones, list) or any(not isinstance(zone, str) or not zone for zone in zones):
+        raise ValueError('Expected a list of time zone names')
+    # Keep saved names even if the local time zone data is temporarily missing.
+    data['zones'] = list(dict.fromkeys(zones or DEFAULT_ZONES))
+    return data
 
 
 def main():
@@ -96,7 +89,7 @@ def main():
             GIRepository.Repository.prepend_search_path(str(directory))
         gi.require_version('Gtk', '3.0')
         gi.require_version('AyatanaAppIndicator3', '0.1')
-        from gi.repository import Gtk, Gdk, GLib, Gio, AyatanaAppIndicator3
+        from gi.repository import Gtk, Gdk, GLib, Gio, GObject, AyatanaAppIndicator3
         import cairo
         from .notes import NoteEditor
     except (ImportError, ValueError) as error:
@@ -122,28 +115,42 @@ def main():
         parser.exit(1, f'Cannot acquire the application lock: {error}\n')
 
     class WorldClock(Gtk.Window):
+        locked = GObject.Property(type=bool, default=True)
+
         def __init__(self):
-            super().__init__(title='World Clock')
-            self.zones, self.on_top, self.opacity, self.separate, self.positions = read_settings()
+            super().__init__(title='World Clock', accept_focus=False, focus_on_map=False)
+            self.settings_load_error = None
+            self.settings_error_dialog = None
+            try:
+                settings = read_settings()
+            except (OSError, ValueError) as error:
+                self.settings_load_error = error
+                settings = {'zones': DEFAULT_ZONES.copy()}
+            self.zones = settings['zones']
+            self.on_top = settings.get('on_top') is True
+            opacity = settings.get('opacity', 0.85)
+            if isinstance(opacity, bool) or not isinstance(opacity, (float, int)):
+                opacity = 0.85
+            self.opacity = max(0.3, min(1.0, opacity))
+            self.separate = settings.get('separate') is not False
+            positions = settings.get('positions', {})
+            if not isinstance(positions, dict):
+                positions = {}
+            self.positions = {zone: point for zone, point in positions.items()
+                              if isinstance(point, list) and len(point) == 2
+                              and all(type(n) is int for n in point)}
             if args.local_only:
                 self.zones, self.positions = DEFAULT_ZONES.copy(), {}
                 self.separate = True
             self.clock_windows = {}
             self.position_save_source = None
             self.rebuilding = False
-            self.locked = True
             self.note_editing = False
-            try:
-                note_settings = json.loads(CONFIG.read_text(encoding='utf-8'))
-                if not isinstance(note_settings, dict):
-                    note_settings = {}
-            except (OSError, ValueError):
-                note_settings = {}
-            self.tr = Translator(note_settings.get('language'))
+            self.tr = Translator(settings.get('language'))
             self.language = self.tr.language
             self.set_title(self.tr('世界时钟'))
-            self.note_enabled = note_settings.get('note_enabled') is True
-            geometry = note_settings.get('note_geometry', [100, 100, 480, 260])
+            self.note_enabled = settings.get('note_enabled') is True
+            geometry = settings.get('note_geometry', [100, 100, 480, 260])
             self.note_geometry = geometry if isinstance(geometry, list) and len(geometry) == 4 and all(type(n) is int for n in geometry) else [100, 100, 480, 260]
             self.set_decorated(False)
             self.set_skip_taskbar_hint(True)
@@ -202,7 +209,9 @@ def main():
             self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
             self.connect('button-press-event', self.drag_window)
             self.rebuild()
-            if args.local_only:
+            if self.settings_load_error is not None:
+                self.show_settings_read_error()
+            elif args.local_only:
                 self.save()
             GLib.timeout_add(250, self.tick)
 
@@ -396,17 +405,44 @@ def main():
                 return True
             return False
 
-        def save(self):
+        def show_settings_read_error(self):
+            self.show_settings_error(self.tr('配置读取失败，本次运行无法保存配置。\n{error}',
+                                            error=self.settings_load_error))
+
+        def show_settings_error(self, message):
+            if self.settings_error_dialog is not None:
+                return
+            dialog = Gtk.MessageDialog(transient_for=self, destroy_with_parent=True,
+                                       message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.NONE,
+                                       text=message)
+            dialog.add_button(self.tr('关闭'), Gtk.ResponseType.CLOSE)
+            self.settings_error_dialog = dialog
+
+            def close(dialog, response):
+                dialog.destroy()
+                self.settings_error_dialog = None
+
+            dialog.connect('response', close)
+            dialog.show()
+
+        def save(self, *, zones=None):
+            if self.settings_load_error is not None:
+                if zones is not None:
+                    self.show_settings_read_error()
+                return False
             try:
                 CONFIG.parent.mkdir(parents=True, exist_ok=True)
                 temp = CONFIG.with_suffix('.tmp')
-                temp.write_text(json.dumps({'zones': self.zones, 'on_top': self.on_top, 'opacity': self.opacity,
+                temp.write_text(json.dumps({'zones': self.zones if zones is None else zones,
+                                            'on_top': self.on_top, 'opacity': self.opacity,
                                             'separate': self.separate, 'positions': self.positions,
                                             'note_enabled': self.note_enabled, 'note_geometry': self.note_geometry,
                                             'language': self.language}, ensure_ascii=False, indent=2), encoding='utf-8')
                 temp.replace(CONFIG)
             except OSError as error:
-                self.status.set_text(self.tr('配置保存失败：{error}', error=error))
+                self.show_settings_error(self.tr('配置保存失败：{error}', error=error))
+                return False
+            return True
 
         def toggle_top(self, button):
             self.on_top = button.get_active()
@@ -436,6 +472,9 @@ def main():
             self.update_input_region()
 
         def update_input_region(self, *args):
+            # In combined mode a gutter click explicitly starts keyboard editing.
+            editing_here = not self.separate and self.note_enabled and self.note_editing
+            self.set_accept_focus(not self.locked or editing_here)
             # Gtk.TextView otherwise installs an I-beam even when read-only.
             # In click-through mode only the gutter accepts pointer input;
             # typing after a row click still goes to the focused editor.
@@ -510,9 +549,23 @@ def main():
             return False
 
         def remove_zone(self, button, zone):
-            self.zones.remove(zone)
-            self.save()
-            self.rebuild()
+            if self.locked:
+                return
+            dialog = Gtk.MessageDialog(transient_for=button.get_toplevel(), modal=True,
+                                       message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.NONE,
+                                       text=self.tr('移除时区 {city}？', city=self.city_label(zone)))
+            dialog.add_button(self.tr('取消'), Gtk.ResponseType.CANCEL)
+            dialog.add_button(self.tr('移除'), Gtk.ResponseType.OK)
+            dialog.set_default_response(Gtk.ResponseType.CANCEL)
+            response = dialog.run()
+            dialog.destroy()
+            if response == Gtk.ResponseType.OK and not self.locked:
+                self.set_zones([name for name in self.zones if name != zone])
+
+        def set_zones(self, zones):
+            if self.save(zones=zones):
+                self.zones = zones
+                self.rebuild()
 
         def rebuild(self):
             needs_arrange = self.separate and any(zone not in self.positions for zone in self.zones)
@@ -523,6 +576,7 @@ def main():
             for child in self.cards.get_children():
                 child.destroy()
             self.rows = []
+            when_unlocked = GObject.BindingFlags.SYNC_CREATE | GObject.BindingFlags.INVERT_BOOLEAN
             for zone in self.zones:
                 card = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
                 card.get_style_context().add_class('card')
@@ -534,6 +588,7 @@ def main():
                 info.pack_start(city, False, False, 0)
                 detail = Gtk.Label(xalign=0)
                 detail.get_style_context().add_class('muted')
+                detail.set_tooltip_text(zone)
                 info.pack_start(detail, False, False, 0)
                 card.pack_start(info, True, True, 0)
                 date = Gtk.Label()
@@ -546,12 +601,14 @@ def main():
                 if self.separate:
                     card.pack_start(clock_line, False, False, 0)
                 remove = Gtk.Button(label='×')
+                self.bind_property('locked', remove, 'sensitive', when_unlocked)
                 remove.set_valign(Gtk.Align.CENTER)
                 remove.set_tooltip_text(self.tr('移除此时区'))
                 remove.connect('clicked', self.remove_zone, zone)
                 card.pack_start(remove, False, False, 0)
                 if self.separate:
-                    window = Gtk.Window(title=f"{self.tr('世界时钟')} · {zone}")
+                    window = Gtk.Window(title=f"{self.tr('世界时钟')} · {zone}", focus_on_map=False)
+                    self.bind_property('locked', window, 'accept-focus', when_unlocked)
                     window.set_decorated(False)
                     window.set_resizable(False)
                     window.set_skip_taskbar_hint(True)
@@ -577,7 +634,12 @@ def main():
                                     max(area.y, min(y, area.y + area.height - height)))
                 else:
                     self.cards.pack_start(card, False, False, 0)
-                self.rows.append((zone, date, time, detail))
+                try:
+                    zone_info = ZoneInfo(zone)
+                except (OSError, ValueError, ZoneInfoNotFoundError):
+                    detail.set_text(self.tr('时区数据暂不可用'))
+                else:
+                    self.rows.append((zone_info, date, time, detail))
             if not self.zones:
                 self.cards.pack_start(Gtk.Label(label=self.tr('点击“添加时区”选择城市')), False, False, 24)
             self.tick()
@@ -595,10 +657,12 @@ def main():
                 date.set_tooltip_text(full)
                 time.set_text(clock)
                 detail.set_text(f'{short}  ·  {offset}')
-                detail.set_tooltip_text(zone)
             return True
 
         def choose_zone(self, button):
+            if self.settings_load_error is not None:
+                self.show_settings_read_error()
+                return
             dialog = Gtk.Dialog(title=self.tr('选择时区'), transient_for=self, modal=True)
             dialog.set_default_size(470, 480)
             dialog.add_button(self.tr('取消'), Gtk.ResponseType.CANCEL)
@@ -627,13 +691,14 @@ def main():
             scroll.add(tree)
             content.pack_start(scroll, True, True, 0)
             dialog.show_all()
+            zone = None
             if dialog.run() == Gtk.ResponseType.OK:
                 selected_model, row = tree.get_selection().get_selected()
                 if row is not None:
-                    self.zones.append(selected_model[row][1])
-                    self.save()
-                    self.rebuild()
+                    zone = selected_model[row][1]
             dialog.destroy()
+            if zone is not None and zone not in self.zones:
+                self.set_zones([*self.zones, zone])
 
     bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
     watcher = bus.call_sync('org.freedesktop.DBus', '/org/freedesktop/DBus',
